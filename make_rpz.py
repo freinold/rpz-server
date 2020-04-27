@@ -3,7 +3,7 @@ import datetime
 
 import requests
 
-HEADER = '''; zone file rpz
+HEADER = '''; zone file db.rpz
 $TTL 1H
 @                       SOA LOCALHOST. named-mgr.example.com ({0} 1h 15m 30d 2h)
                         NS  LOCALHOST.
@@ -15,7 +15,7 @@ with open("../dns-firewall/providers.list") as p:
 
 ips = {}
 
-with open("../dns-firewall/rpz", "w") as rpz:
+with open("../dns-firewall/db.rpz", "w") as rpz:
     rpz.write(HEADER.format(datetime.datetime.now().strftime("%Y%m%d%H")))
     for provider in providers:
         rpz.write("\n; "+provider)
