@@ -1,4 +1,4 @@
-; zone file db.rpz
+; zone file {ZONE}
 $TTL 1H
 @                       SOA LOCALHOST. named-mgr.example.com ({SERIAL} 1h 15m 30d 2h)
                         NS  LOCALHOST.

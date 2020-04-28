@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import datetime
+import json
 import logging
 import os
 
@@ -7,17 +8,28 @@ import crontab
 import requests
 
 LOG_FILE = "/var/rpz_server/log"
-RPZ = "/etc/bind/db.rpz"
+BIND_DIR = "/etc/bind/"
+NAMED_CONF = "/etc/bind/named.conf"
 
-PROVIDERS = "resources/providers.list"
+PROVIDERS = "resources/providers.json"
 HEADER = "resources/rpz_header"
+CUSTOM_NAMED_CONF = "resources/named.conf"
+
+ZONE_TEMPLATE = '''
+zone "{0}" {
+        type master;
+        file "{0}";
+        allow-query { none; };
+};
+'''
 
 
 def main() -> None:
     _configure_logs()
     if not _check_cron():
         logging.info("Cron job set to 04:00.")
-    _build_rpz()
+    _build_config()
+    _reload()
 
 
 def _configure_logs() -> None:
@@ -36,7 +48,7 @@ def _configure_logs() -> None:
 
 
 def _check_cron() -> bool:
-    cron = crontab.CronTab(user="root")
+    cron = crontab.CronTab(user="fr")
     if len(cron.find_comment("Rebuild rpz and restart BIND9")) == 0:
         # Set this script as cron job every day at 04:00
         own_path = os.path.realpath(__file__)
@@ -49,46 +61,63 @@ def _check_cron() -> bool:
         return True
 
 
-def _build_rpz() -> None:
-    ips = {}
-
+def _build_config() -> None:
     # Read providers
-    with open(PROVIDERS) as p:
-        providers = p.readlines()
+    with open(PROVIDERS) as file:
+        categories = json.load(file)["categories"]
 
-    # Read header
+    # Read zone header
     with open(HEADER) as h:
         header = h.read().replace("{SERIAL}", datetime.datetime.now().strftime("%Y%m%d%H"))
 
-    with open(RPZ, "w") as rpz:
-        rpz.write(header)
-        for provider in providers:
-            rpz.write("\n; " + provider)
-            domains = requests.get(provider.rstrip()).iter_lines()
-            for domain in domains:
-                domain = str(domain, "utf-8").strip()
-                if domain.startswith("#") or len(domain) == 0:
-                    continue
+    # Build zones
+    for category, content in categories.items():
+        category_header = header.replace("{ZONE}", category)
+        with open(BIND_DIR + content["filename"]) as zone:
+            zone.write(category_header)
+            for provider in content["providers"]:
+                domains = requests.get(provider.rstrip()).iter_lines()
+                for domain in domains:
+                    domain, ok = __format_domain(domain)
+                    if ok:
+                        zone.write(domain)
 
-                parts = domain.split(" ")
-                if len(parts) >= 2:
-                    # Only to see if we got the right ones
-                    ip = parts[0].rstrip()
-                    if ip not in ips:
-                        ips[ip] = 1
-                    else:
-                        ips[ip] += 1
+    # Build named.conf
+    with open(CUSTOM_NAMED_CONF) as file:
+        custom_named_conf = file.read()
 
-                    if parts[0].startswith("0.0.0.0") or parts[0].startswith("127.0.0.1"):
-                        domain = parts[1]
-                    else:
-                        continue
+    policies = ""
+    zones = ""
+    for category, content in categories:
+        policies += "zone {0}; ".format(content["filename"])
+        zones += ZONE_TEMPLATE.format(content["filename"])
 
-                domain = domain.split("#")[0]  # Before comment
-                domain += "        CNAME . \n"
-                rpz.write(domain)
+    custom_named_conf = custom_named_conf.replace("{POLICIES}", policies).replace("{ZONES}", zones)
 
-    logging.info("IPs:\n{0}".format(ips))
+    with open(NAMED_CONF, "w") as named_conf:
+        named_conf.write(custom_named_conf)
+
+
+def _reload():
+    # TODO: rndc reload via bash
+    pass
+
+
+def __format_domain(domain: bytes) -> (str, bool):
+    domain = str(domain, "utf-8").strip()
+    if domain.startswith("#") or len(domain) == 0:
+        return domain, False
+
+    parts = domain.split(" ")
+    if len(parts) >= 2:
+        if parts[0].startswith("0.0.0.0") or parts[0].startswith("127.0.0.1"):
+            domain = parts[1]
+        else:
+            return domain, False
+
+    domain = domain.split("#")[0]  # Before comment
+    domain += "        CNAME . \n"
+    return domain, True
 
 
 if __name__ == '__main__':
