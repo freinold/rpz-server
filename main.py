@@ -16,18 +16,18 @@ HEADER = "resources/rpz_header"
 CUSTOM_NAMED_CONF = "resources/named.conf"
 
 ZONE_TEMPLATE = '''
-zone "{0}" {
+zone "{0}" {{
         type master;
         file "{0}";
-        allow-query { none; };
-};
+        allow-query {{ none; }};
+}};
 '''
 
 
 def main() -> None:
-    _configure_logs()
-    if not _check_cron():
-        logging.info("Cron job set to 04:00.")
+    #_configure_logs()
+    #if not _check_cron():
+    #    logging.info("Cron job set to 04:00.")
     _build_config()
     _reload()
 
@@ -73,7 +73,7 @@ def _build_config() -> None:
     # Build zones
     for category, content in categories.items():
         category_header = header.replace("{ZONE}", category)
-        with open(BIND_DIR + content["filename"]) as zone:
+        with open(BIND_DIR + content["filename"], "w") as zone:
             zone.write(category_header)
             for provider in content["providers"]:
                 domains = requests.get(provider.rstrip()).iter_lines()
@@ -88,7 +88,7 @@ def _build_config() -> None:
 
     policies = ""
     zones = ""
-    for category, content in categories:
+    for category, content in categories.items():
         policies += "zone {0}; ".format(content["filename"])
         zones += ZONE_TEMPLATE.format(content["filename"])
 
