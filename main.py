@@ -31,14 +31,14 @@ zone "{0}" {{
 
 def main() -> None:
     # configure_logs()
-    if not check_cron():
-        logging.info("Cron job set to 04:00.")
+    # if not check_cron():
+    #     logging.info("Cron job set to 04:00.")
 
-    domain_categories, ip_range_lists = providers_from_json("providers.json")
+    domain_categories, ip_range_lists = providers_from_json(PROVIDERS)
 
     domains_per_category = get_domains(domain_categories)
 
-    with open("rpz_header") as file:
+    with open(HEADER) as file:
         header = file.read().replace("{SERIAL}", datetime.datetime.now().strftime("%Y%m%d%H"))
 
     domain_zones, domain_policies = generate_domain_zones(domain_categories, domains_per_category, header)
@@ -108,7 +108,7 @@ def generate_domain_zones(domain_categories: dict, domains_per_category: dict, h
     for category_combination in _category_combinations(max_category_id):
         combination_id = sum(map(lambda x: 2 ** x, category_combination))
         description_list = map(lambda x: domain_categories[str(x)]["description"], category_combination)
-        filename = "db.combination.{0}".format(combination_id)
+        filename = BIND_DIR + "db.combination.{0}".format(combination_id)
         zones += ZONE_TEMPLATE.format(filename)
         policies += "zone {0}; ".format(filename)
         combination_header = header.replace("{ZONE}", "block.{0}: Combination of {1}".format(combination_id, ", ".join(
@@ -122,7 +122,7 @@ def generate_domain_zones(domain_categories: dict, domains_per_category: dict, h
 
 def generate_ip_zone(ip_range_lists, header):
     ip_range_header = header.replace("{ZONE}", "block.ip_range")
-    filename = "db.ip"
+    filename = BIND_DIR + "db.ip"
     with open(filename, "w") as file:
         file.write(ip_range_header)
         for ip_range_list in ip_range_lists:
