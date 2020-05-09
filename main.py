@@ -132,7 +132,7 @@ def generate_ip_zone(ip_range_lists, header):
                 ip_range, ok = format_ip(ip_range)
                 if ok:
                     file.write(ip_range + "\n")
-    return ZONE_TEMPLATE.format(filename), "zone {0};".format(filename)
+    return ZONE_TEMPLATE.format(filename), 'zone "{0}";'.format(filename)
 
 
 def build_named_conf(zones: str, policies: str):
