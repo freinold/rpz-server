@@ -15,6 +15,7 @@ import bash
 LOG_FILE = "/var/rpz_server/log"
 BIND_DIR = "/etc/bind/"
 NAMED_CONF = "/etc/bind/named.conf"
+RNDC_CONF = "/etc/bind/rndc.conf"
 
 PROVIDERS = "resources/providers.json"
 HEADER = "resources/rpz_header"
@@ -138,6 +139,12 @@ def generate_ip_zone(ip_range_lists, header):
 def build_named_conf(zones: str, policies: str):
     with open(CUSTOM_NAMED_CONF) as file:
         custom_named_conf = file.read()
+
+    with open(RNDC_CONF) as file:
+        rndc_conf = file.readlines()
+        for line in rndc_conf:
+            if line.lstrip().startswith("#"):
+                custom_named_conf += line.replace("#", "")
 
     custom_named_conf = custom_named_conf.replace("{POLICIES}", policies).replace("{ZONES}", zones)
 
