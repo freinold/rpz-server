@@ -24,7 +24,7 @@ ZONE_TEMPLATE = '''
 zone "{0}" {{
         type master;
         file "{0}";
-        allow-query {{ none; }};
+        allow-query {{ any; }};
 }};
 '''
 
@@ -57,7 +57,7 @@ def configure_logs() -> None:
         os.mknod(LOG_FILE)
     # noinspection PyArgumentList
     logging.basicConfig(
-        datefmt="%Y-%m-%d %H:%M:%S",
+        datefmt="%Y-%m-%d %H:%M:%S %Z",
         filename=LOG_FILE,
         filemode="a",
         format="{asctime} - {levelname:8}: {message}",
@@ -92,13 +92,13 @@ def providers_from_json(filename: str) -> (dict, list):
 def get_domains(domain_categories: dict) -> dict:
     domains_per_category = {}
     for category_id, data in domain_categories.items():
-        domains_per_category[category_id] = []
+        domains_per_category[category_id] = set()
         for provider in data["providers"]:
             domains = requests.get(provider).iter_lines()
             for domain in domains:
                 domain, ok = _format_domain(domain)
                 if ok:
-                    domains_per_category[category_id].append(domain)
+                    domains_per_category[category_id].add(domain)
     return domains_per_category
 
 
