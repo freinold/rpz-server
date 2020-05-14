@@ -23,7 +23,7 @@ CUSTOM_NAMED_CONF = "resources/named.conf"
 ZONE_TEMPLATE = '''
 zone "{0}" {{
         type master;
-        file "{0}";
+        file "{1}";
         allow-query {{ any; }};
 }};
 '''
@@ -108,8 +108,9 @@ def generate_domain_zones(domain_categories: dict, domains_per_category: dict, h
     for category_combination in _category_combinations(max_category_id):
         combination_id = sum(map(lambda x: 2 ** x, category_combination))
         description_list = map(lambda x: domain_categories[str(x)]["description"], category_combination)
-        filename = BIND_DIR + "db.combination.{0}".format(combination_id)
-        zones += ZONE_TEMPLATE.format(filename)
+        zone_name = "db.combination.{0}".format(combination_id)
+        filename = BIND_DIR + zone_name
+        zones += ZONE_TEMPLATE.format(zone_name, filename)
         policies += 'zone "{0}"; '.format(filename)
         combination_header = header.replace("{ZONE}", "block.{0}: Combination of {1}".format(combination_id, ", ".join(
             description_list)))
