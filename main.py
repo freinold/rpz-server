@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import datetime
-import ipaddress
 import itertools
 import json
 import logging
@@ -193,10 +192,11 @@ def _format_ipv6(ip_range: bytes) -> (str, bool):
     if ip_range.startswith(";"):
         return ip_range, False
     ip_range = ip_range.split(";")[0].strip()
-    notation = ipaddress.IPv6Network(ip_range).exploded.replace("/", ":").split(":")
-    notation.reverse()
-    return "{0}.rpz-ip\tCNAME . ".format(".".join(notation)), True
+    ip_range = ip_range.replace("::", ":zz:").replace(":/", ":").replace("/", ":").split(":")
+    ip_range.reverse()
+    return "{0}.rpz-ip\tCNAME . ".format(".".join(ip_range)), True
 
 
 if __name__ == '__main__':
-    main()
+    print(_format_ipv6(bytes("2a00:55a0::/32", "utf-8")))
+    # main()
