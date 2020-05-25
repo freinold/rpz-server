@@ -1,0 +1,6 @@
+
+zone "{NAME}" {
+        type master;
+        file "{FILE}";
+        allow-query { any; };
+};

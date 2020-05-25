@@ -18,14 +18,7 @@ NAMED_CONF = "/etc/bind/named.conf"
 PROVIDERS = "resources/providers.json"
 HEADER = "resources/rpz_header"
 CUSTOM_NAMED_CONF = "resources/named.conf"
-
-ZONE_TEMPLATE = '''
-zone "{0}" {{
-        type master;
-        file "{1}";
-        allow-query {{ any; }};
-}};
-'''
+MASTER_ZONE_TEMPLATE = "resources/master_zone_template"
 
 
 def main() -> None:
@@ -101,15 +94,19 @@ def get_domains(domain_categories: dict) -> dict:
     return domains_per_category
 
 
-def generate_domain_zones(domain_categories: dict, domains_per_category: dict, header: str):
+def generate_domain_zones(domain_categories: dict, domains_per_category: dict, header: str) -> (str, str):
     zones, policies = "", ""
     max_category_id = int(max(list(domain_categories)))
+
+    with open(MASTER_ZONE_TEMPLATE) as file:
+        master_zone_template = file.read()
+
     for category_combination in _category_combinations(max_category_id):
         combination_id = sum(map(lambda x: 2 ** x, category_combination))
         description_list = map(lambda x: domain_categories[str(x)]["description"], category_combination)
         zone_name = "db.combination.{0}".format(combination_id)
         filename = BIND_DIR + zone_name
-        zones += ZONE_TEMPLATE.format(zone_name, filename)
+        zones += master_zone_template.replace("{NAME}", zone_name).replace("{FILE}", filename)
         policies += 'zone "{0}"; '.format(filename)
         combination_header = header.replace("{ZONE}", "block.{0}: Combination of {1}".format(combination_id, ", ".join(
             description_list)))
@@ -120,9 +117,11 @@ def generate_domain_zones(domain_categories: dict, domains_per_category: dict, h
     return zones, policies
 
 
-def generate_ip_zone(ip_range_lists, header):
+def generate_ip_zone(ip_range_lists, header) -> (str, str):
     ip_range_header = header.replace("{ZONE}", "block.ip_range")
-    filename = BIND_DIR + "db.ip"
+    zone_name = "db.ip"
+    filename = BIND_DIR + zone_name
+
     with open(filename, "w") as file:
         file.write(ip_range_header)
         for ip_range_list in ip_range_lists:
@@ -132,10 +131,14 @@ def generate_ip_zone(ip_range_lists, header):
                 ip_range, ok = format_ip(ip_range)
                 if ok:
                     file.write(ip_range + "\n")
-    return ZONE_TEMPLATE.format(filename), 'zone "{0}";'.format(filename)
+
+    with open(MASTER_ZONE_TEMPLATE) as file:
+        master_zone_template = file.read()
+
+    return master_zone_template.replace("{ZONE}", zone_name).replace("{FILE}", filename), 'zone "{0}";'.format(filename)
 
 
-def build_named_conf(zones: str, policies: str):
+def build_named_conf(zones: str, policies: str) -> None:
     with open(CUSTOM_NAMED_CONF) as file:
         custom_named_conf = file.read()
 
@@ -145,7 +148,7 @@ def build_named_conf(zones: str, policies: str):
         named_conf.write(custom_named_conf)
 
 
-def load():
+def load() -> None:
     output = bash.call("systemctl is-active bind9")
     if output == "active":
         # Reload via rndc
@@ -198,5 +201,4 @@ def _format_ipv6(ip_range: bytes) -> (str, bool):
 
 
 if __name__ == '__main__':
-    print(_format_ipv6(bytes("2a00:55a0::/32", "utf-8")))
-    # main()
+    main()
