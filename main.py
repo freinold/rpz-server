@@ -133,7 +133,7 @@ def generate_ip_zone(ip_range_lists, header) -> (str, str):
     with open(MASTER_ZONE_TEMPLATE) as file:
         master_zone_template = file.read()
 
-    return master_zone_template.replace("{ZONE}", zone_name).replace("{FILE}", filename)
+    return master_zone_template.replace("{NAME}", zone_name).replace("{FILE}", filename)
 
 
 def build_named_conf(zones: str) -> None:
