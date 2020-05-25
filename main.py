@@ -103,7 +103,7 @@ def generate_domain_zones(domain_categories: dict, domains_per_category: dict, h
     for category_combination in _category_combinations(max_category_id):
         combination_id = sum(map(lambda x: 2 ** x, category_combination))
         description_list = map(lambda x: domain_categories[str(x)]["description"], category_combination)
-        zone_name = "db.combination.{0}".format(combination_id)
+        zone_name = "db.combination.{:02d}".format(combination_id)
         filename = BIND_DIR + zone_name
         zones += master_zone_template.replace("{NAME}", zone_name).replace("{FILE}", filename)
         combination_header = header.replace("{ZONE}", "block.{0}: Combination of {1}".format(combination_id, ", ".join(
