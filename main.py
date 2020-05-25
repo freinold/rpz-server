@@ -33,13 +33,12 @@ def main() -> None:
     with open(HEADER) as file:
         header = file.read().replace("{SERIAL}", datetime.datetime.now().strftime("%Y%m%d%H"))
 
-    domain_zones, domain_policies = generate_domain_zones(domain_categories, domains_per_category, header)
-    ip_zone, ip_policy = generate_ip_zone(ip_range_lists, header)
+    domain_zones = generate_domain_zones(domain_categories, domains_per_category, header)
+    ip_zone = generate_ip_zone(ip_range_lists, header)
 
     zones = domain_zones + ip_zone
-    policies = domain_policies + ip_policy
 
-    build_named_conf(zones, policies)
+    build_named_conf(zones)
 
     load()
 
@@ -95,7 +94,7 @@ def get_domains(domain_categories: dict) -> dict:
 
 
 def generate_domain_zones(domain_categories: dict, domains_per_category: dict, header: str) -> (str, str):
-    zones, policies = "", ""
+    zones = ""
     max_category_id = int(max(list(domain_categories)))
 
     with open(MASTER_ZONE_TEMPLATE) as file:
@@ -107,14 +106,13 @@ def generate_domain_zones(domain_categories: dict, domains_per_category: dict, h
         zone_name = "db.combination.{0}".format(combination_id)
         filename = BIND_DIR + zone_name
         zones += master_zone_template.replace("{NAME}", zone_name).replace("{FILE}", filename)
-        policies += 'zone "{0}"; '.format(filename)
         combination_header = header.replace("{ZONE}", "block.{0}: Combination of {1}".format(combination_id, ", ".join(
             description_list)))
         with open(filename, "w") as file:
             file.write(combination_header)
             for category_id in category_combination:
                 file.write("\n".join(domains_per_category[str(category_id)]) + "\n")
-    return zones, policies
+    return zones
 
 
 def generate_ip_zone(ip_range_lists, header) -> (str, str):
@@ -135,14 +133,14 @@ def generate_ip_zone(ip_range_lists, header) -> (str, str):
     with open(MASTER_ZONE_TEMPLATE) as file:
         master_zone_template = file.read()
 
-    return master_zone_template.replace("{ZONE}", zone_name).replace("{FILE}", filename), 'zone "{0}";'.format(filename)
+    return master_zone_template.replace("{ZONE}", zone_name).replace("{FILE}", filename)
 
 
-def build_named_conf(zones: str, policies: str) -> None:
+def build_named_conf(zones: str) -> None:
     with open(CUSTOM_NAMED_CONF) as file:
         custom_named_conf = file.read()
 
-    custom_named_conf = custom_named_conf.replace("{POLICIES}", policies).replace("{ZONES}", zones)
+    custom_named_conf = custom_named_conf.replace("{ZONES}", zones)
 
     with open(NAMED_CONF, "w") as named_conf:
         named_conf.write(custom_named_conf)
@@ -152,10 +150,10 @@ def load() -> None:
     output = bash.call("systemctl is-active bind9")
     if output == "active":
         # Reload via rndc
-        bash.call("sudo rndc reload")
+        print(bash.call("sudo rndc reload"))
     else:
         # Start via systemctl
-        bash.call("sudo systemctl start bind9")
+        print(bash.call("sudo systemctl start bind9"))
 
 
 def _category_combinations(n: int) -> list:
