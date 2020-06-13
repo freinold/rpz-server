@@ -11,7 +11,7 @@ import requests
 
 import bash
 
-LOG_FILE = "/var/rpz_server/log"
+LOG_FILE = "/var/log/rpz-server"
 BIND_DIR = "/etc/bind/"
 NAMED_CONF = "/etc/bind/named.conf"
 
