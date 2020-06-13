@@ -22,9 +22,9 @@ MASTER_ZONE_TEMPLATE = "resources/master_zone_template"
 
 
 def main() -> None:
-    # configure_logs()
-    # if not check_cron():
-    #     logging.info("Cron job set to 04:00.")
+    configure_logs()
+    if not check_cron():
+        logging.info("Cron job set to 04:00.")
 
     domain_categories, ip_range_lists = providers_from_json(PROVIDERS)
 
@@ -55,15 +55,15 @@ def configure_logs() -> None:
         level=logging.INFO,
         style="{"
     )
-    logging.info("rpz-Server script started.")
+    logging.info("rpz-server script started.")
 
 
 def check_cron() -> bool:
-    cron = crontab.CronTab(user="fr")
+    cron = crontab.CronTab(user="root")
     if len(cron.find_comment("Rebuild zones and restart BIND9")) == 0:
         # Set this script as cron job every day at 04:00
         own_path = os.path.realpath(__file__)
-        job = cron.new(command="python3 {0}".format(own_path),
+        job = cron.new(command="pipenv run python3 {0}".format(own_path),
                        comment="Rebuild zones and restart BIND9")
         job.hour.on(4)
         cron.write()
