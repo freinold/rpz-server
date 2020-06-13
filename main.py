@@ -60,9 +60,9 @@ def configure_logs() -> None:
 
 def check_cron() -> bool:
     cron = crontab.CronTab(user="root")
-    print(cron.find_comment("Rebuild zones and restart BIND9"))
-    exit(0)
-    if len(cron.find_comment("Rebuild zones and restart BIND9")) == 0:
+    for command in cron.find_comment("Rebuild zones and restart BIND9"):
+        return True
+    else:
         # Set this script as cron job every day at 04:00
         own_path = os.path.realpath(__file__)
         job = cron.new(command="pipenv run python3 {0}".format(own_path),
@@ -71,8 +71,6 @@ def check_cron() -> bool:
         job.hour.on(4)
         cron.write()
         return False
-    else:
-        return True
 
 
 def providers_from_json(filename: str) -> (dict, list):
