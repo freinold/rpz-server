@@ -65,7 +65,8 @@ def check_cron() -> bool:
     else:
         # Set this script as cron job every day at 04:00
         own_path = os.path.realpath(__file__)
-        job = cron.new(command="pipenv run python3 {0}".format(own_path),
+        own_dir = os.path.dirname(own_path)
+        job = cron.new(command="cd {0} && pipenv run python3 {1}".format(own_dir, own_path),
                        comment="Rebuild zones and restart BIND9")
         job.minute.on(0)
         job.hour.on(4)
