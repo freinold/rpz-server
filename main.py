@@ -26,21 +26,28 @@ def main() -> None:
     if not check_cron():
         logging.info("Cron job set to 04:00.")
 
-    domain_categories, ip_range_lists = providers_from_json(PROVIDERS)
-
-    domains_per_category = get_domains(domain_categories)
-
     with open(HEADER) as file:
         header = file.read().replace("{SERIAL}", datetime.datetime.now().strftime("%Y%m%d%H"))
 
+    logging.info("Retrieving new domains.")
+    domain_categories, ip_range_lists = providers_from_json(PROVIDERS)
+    domains_per_category = get_domains(domain_categories)
+
+    logging.info("Generating domain zones.")
     domain_zones = generate_domain_zones(domain_categories, domains_per_category, header)
+    logging.info("Generating ip zone.")
     ip_zone = generate_ip_zone(ip_range_lists, header)
 
     zones = domain_zones + ip_zone
 
+    logging.info("Building named configuration.")
     build_named_conf(zones)
 
+    logging.info("Loading new configuration.")
     load()
+
+    logging.info("rpz-server script finished.")
+    exit(0)
 
 
 def configure_logs() -> None:
