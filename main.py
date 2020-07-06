@@ -158,7 +158,8 @@ def build_named_conf(zones: str) -> None:
 
 
 def load() -> None:
-    output = bash.call("systemctl is-active bind9")
+    output = bash.call("systemctl is-active bind9").strip()
+    logging.info(output)
     if output == "active":
         # Reload via rndc
         print(bash.call("sudo rndc reload"))
