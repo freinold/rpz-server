@@ -67,7 +67,7 @@ def configure_logs() -> None:
 
 def check_cron() -> bool:
     cron = crontab.CronTab(user="root")
-    for command in cron.find_comment("Rebuild zones and restart BIND9"):
+    for command in cron.find_comment("DNS-RPZ administration"):
         return True
     else:
         # Set this script as cron job every day at 04:00
@@ -76,9 +76,9 @@ def check_cron() -> bool:
         filename = os.path.basename(own_path)
         python_path = bash.call("which python3").strip()
         job = cron.new(command="cd {0} && {1} {2} >> {3}".format(dirname, python_path, filename, LOG_FILE + ".cron"),
-                       comment="DNS-RPZ administration: Rebuild zones and restart BIND9")
+                       comment="DNS-RPZ administration")
         job.minute.on(0)
-        job.hour.on(4)
+        job.hour.every(2)
         cron.write()
         return False
 
