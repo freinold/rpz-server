@@ -72,10 +72,8 @@ def check_cron() -> bool:
     else:
         # Set this script as cron job every day at 04:00
         own_path = os.path.realpath(__file__)
-        own_dir = os.path.dirname(own_path)
-        pipenv_path = bash.call("pipenv --venv").strip()
-        job = cron.new(command="cd {0} && pipenv run python3 main.py &>> {1}".format(own_dir, LOG_FILE + ".cron"),
-                       comment="Rebuild zones and restart BIND9")
+        job = cron.new(command="python3 {0} &>> {1}".format(own_path, LOG_FILE + ".cron"),
+                       comment="DNS-RPZ administration: Rebuild zones and restart BIND9")
         job.minute.on(0)
         job.hour.on(4)
         cron.write()
@@ -208,5 +206,8 @@ def _format_ipv6(ip_range: bytes) -> (str, bool):
     return "{0}.rpz-ip\tCNAME . ".format(".".join(ip_range)), True
 
 
+print("A")
+
 if __name__ == '__main__':
+    print("B")
     main()
