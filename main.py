@@ -24,7 +24,7 @@ MASTER_ZONE_TEMPLATE = "resources/master_zone_template"
 def main() -> None:
     configure_logs()
     if not check_cron():
-        logging.info("Cron job set to 04:00.")
+        logging.info("Cron job set.")
 
     with open(HEADER) as file:
         header = file.read().replace("{SERIAL}", datetime.datetime.now().strftime("%Y%m%d%H"))
@@ -159,7 +159,6 @@ def build_named_conf(zones: str) -> None:
 
 def load() -> None:
     output = bash.call("systemctl is-active bind9").strip()
-    logging.info(output)
     if output == "active":
         # Reload via rndc
         print(bash.call("sudo rndc reload"))
