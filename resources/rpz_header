@@ -1,4 +1,4 @@
-; resource policy zone file {ZONE}
+; response policy zone file {ZONE}
 $TTL 1H
 @                       SOA LOCALHOST. named-mgr.example.com ({SERIAL} 2h 30m 10d 30m)
                         NS  LOCALHOST.
