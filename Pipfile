@@ -7,7 +7,7 @@ verify_ssl = true
 
 [packages]
 python-crontab = "~=2.4.2"
-requests = "~=2.23.0"
+requests = ">=2.31.0"
 
 [requires]
 python_version = "3.7"
